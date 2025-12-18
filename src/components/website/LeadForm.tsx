@@ -28,7 +28,7 @@ const leadSchema = z.object({
     message: z.string().optional(),
 });
 
-export const LeadForm = () => {
+export const LeadForm = ({ id }: { id?: string }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
@@ -68,7 +68,7 @@ export const LeadForm = () => {
     }
 
     return (
-        <section id="contact" className="py-20 px-6">
+        <section id={id || "contact"} className="py-20 px-6">
             <div className="container max-w-4xl mx-auto">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl md:text-5xl font-serif font-bold mb-4">

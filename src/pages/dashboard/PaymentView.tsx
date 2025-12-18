@@ -22,7 +22,7 @@ export const PaymentView = () => {
     const handlePay = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsProcessing(true);
-        const success = await processPayment(invoice.amount);
+        const success = await processPayment(invoice.amount, invoice.id);
         setIsProcessing(false);
         if (success) setIsPaid(true);
     };
@@ -46,8 +46,8 @@ export const PaymentView = () => {
                             <h2 className="text-2xl font-bold mt-1">#{invoice.id}</h2>
                         </div>
                         <div className={`px-3 py-1 rounded-full text-xs font-bold ${invoice.status === 'Paid'
-                                ? 'bg-green-500/20 text-green-500'
-                                : 'bg-amber-500/20 text-amber-500'
+                            ? 'bg-green-500/20 text-green-500'
+                            : 'bg-amber-500/20 text-amber-500'
                             }`}>
                             {invoice.status.toUpperCase()}
                         </div>

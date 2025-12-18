@@ -13,7 +13,7 @@ const LandingPage = () => {
                 <Hero />
                 <ValueProps />
                 <VoiceAgentSection />
-                <LeadForm />
+                <LeadForm id="lead-form" />
             </main>
 
             {/* Simple Footer */}

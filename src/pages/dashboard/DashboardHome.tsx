@@ -11,6 +11,7 @@ export const DashboardHome = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Column */}
+                {/* Main Column */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* Stats */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -28,15 +29,58 @@ export const DashboardHome = () => {
                         </GlassCard>
                     </div>
 
+                    {/* Active Project Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <GlassCard className="p-6">
+                            <h3 className="font-bold mb-4 text-primary">Next Milestone</h3>
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold">3</div>
+                                <div>
+                                    <p className="font-medium">Visual Design Approval</p>
+                                    <p className="text-xs text-white/40">Due: Dec 20, 2025</p>
+                                </div>
+                            </div>
+                            <div className="w-full bg-white/10 rounded-full h-1.5 mt-2">
+                                <div className="bg-primary h-full rounded-full w-[70%]" />
+                            </div>
+                        </GlassCard>
+
+                        <GlassCard className="p-6">
+                            <h3 className="font-bold mb-4 text-primary">Assigned CSM</h3>
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-lg font-bold">
+                                    JD
+                                </div>
+                                <div>
+                                    <p className="font-medium">Jane Doe</p>
+                                    <p className="text-xs text-white/40">Customer Success Manager</p>
+                                    <div className="flex gap-2 mt-1">
+                                        <button className="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded transition-colors">Email</button>
+                                        <button className="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded transition-colors">Book Call</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </GlassCard>
+                    </div>
+
                     <div className="bg-white/5 border border-white/10 rounded-xl p-6 min-h-[300px]">
-                        <h3 className="font-bold mb-4">Activity Timeline</h3>
+                        <h3 className="font-bold mb-4">Upcoming Meetings</h3>
                         <div className="space-y-4">
-                            {[1, 2, 3].map((_, i) => (
-                                <div key={i} className="flex gap-4 pb-4 border-b border-white/5 last:border-0 last:pb-0">
-                                    <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                                    <div>
-                                        <p className="text-sm font-medium">New Lead Captured</p>
-                                        <p className="text-xs text-white/40">2 hours ago</p>
+                            {[
+                                { title: "Implementation Kickoff", time: "Today, 2:00 PM", with: "Jane Doe (CSM)", status: "Confirmed" },
+                                { title: "CRM Integration Review", time: "Tomorrow, 11:00 AM", with: "Tech Team", status: "Pending" },
+                                { title: "Strategy Session", time: "Dec 22, 10:00 AM", with: "Sales Lead", status: "Confirmed" }
+                            ].map((meeting, i) => (
+                                <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/5">
+                                    <div className="flex gap-4">
+                                        <div className="w-1 h-full bg-primary rounded-full" />
+                                        <div>
+                                            <p className="font-medium">{meeting.title}</p>
+                                            <p className="text-xs text-white/40">{meeting.time} • w/ {meeting.with}</p>
+                                        </div>
+                                    </div>
+                                    <div className="px-2 py-1 rounded text-[10px] font-bold bg-white/10 text-white/60">
+                                        {meeting.status}
                                     </div>
                                 </div>
                             ))}

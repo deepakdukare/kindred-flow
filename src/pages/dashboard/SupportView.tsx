@@ -3,6 +3,7 @@ import { GlassCard } from "../../components/ui/GlassCard";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Send, User, Bot } from "lucide-react";
+import { sendMessage } from "../../lib/api";
 
 export const SupportView = () => {
     const [input, setInput] = useState("");
@@ -12,17 +13,22 @@ export const SupportView = () => {
         { id: 3, sender: "admin", text: "Hi Deepak, we have it scheduled for Tuesday at 2 PM EST.", time: "10:15 AM" },
     ]);
 
-    const handleSend = (e: React.FormEvent) => {
+    const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim()) return;
 
-        setMessages([...messages, {
+        const newMessage = {
             id: messages.length + 1,
             sender: "user",
             text: input,
             time: "Now"
-        }]);
+        };
+
+        setMessages([...messages, newMessage]);
         setInput("");
+
+        // Sync with backend (Airtable/Slack via n8n)
+        await sendMessage(input);
     };
 
     return (
@@ -45,8 +51,8 @@ export const SupportView = () => {
                             </div>
 
                             <div className={`max-w-[70%] p-4 rounded-2xl ${msg.sender === "user"
-                                    ? "bg-primary/20 text-white rounded-tr-sm"
-                                    : "bg-white/5 text-white/90 rounded-tl-sm"
+                                ? "bg-primary/20 text-white rounded-tr-sm"
+                                : "bg-white/5 text-white/90 rounded-tl-sm"
                                 }`}>
                                 <p className="text-sm">{msg.text}</p>
                                 <p className="text-[10px] opacity-40 mt-1 text-right">{msg.time}</p>

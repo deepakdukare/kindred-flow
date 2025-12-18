@@ -29,7 +29,10 @@ export const Hero = () => {
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                        <button className="group relative px-8 py-4 bg-primary text-primary-foreground font-bold rounded-full transition-all hover:shadow-[0_0_40px_-10px_rgba(245,158,11,0.5)] hover:scale-105 flex items-center gap-2">
+                        <button
+                            onClick={() => document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })}
+                            className="group relative px-8 py-4 bg-primary text-primary-foreground font-bold rounded-full transition-all hover:shadow-[0_0_40px_-10px_rgba(245,158,11,0.5)] hover:scale-105 flex items-center gap-2"
+                        >
                             Start Automating
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </button>

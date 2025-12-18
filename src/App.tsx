@@ -9,6 +9,10 @@ import { DeliverablesView } from "./pages/dashboard/DeliverablesView";
 import { SupportView } from "./pages/dashboard/SupportView";
 import { SocialMediaView } from "./pages/dashboard/SocialMediaView";
 import { AnalyticsView } from "./pages/dashboard/AnalyticsView";
+import { LeadsView } from "./pages/dashboard/LeadsView";
+import { MeetingsView } from "./pages/dashboard/MeetingsView";
+import { ProposalsView } from "./pages/dashboard/ProposalsView";
+import { SettingsView } from "./pages/dashboard/SettingsView";
 import { ProposalViewer } from "./pages/ProposalViewer";
 
 function App() {
@@ -30,6 +34,10 @@ function App() {
           <Route path="messages" element={<SupportView />} />
           <Route path="social" element={<SocialMediaView />} />
           <Route path="analytics" element={<AnalyticsView />} />
+          <Route path="leads" element={<LeadsView />} />
+          <Route path="meetings" element={<MeetingsView />} />
+          <Route path="proposals" element={<ProposalsView />} />
+          <Route path="settings" element={<SettingsView />} />
         </Route>
       </Routes>
     </BrowserRouter>

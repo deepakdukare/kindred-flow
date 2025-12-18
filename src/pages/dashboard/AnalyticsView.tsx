@@ -4,9 +4,11 @@ import { ArrowUpRight, ArrowDownRight, Users, DollarSign, TrendingUp, Activity }
 export const AnalyticsView = () => {
 
     const kpis = [
-        { label: "Total Revenue", value: "$12,450", change: "+12%", trend: "up", icon: DollarSign },
+        { label: "Total Revenue", value: "$42,500", change: "+12%", trend: "up", icon: DollarSign },
         { label: "Active Leads", value: "142", change: "+5%", trend: "up", icon: Users },
-        { label: "Conversion Rate", value: "3.2%", change: "-0.4%", trend: "down", icon: TrendingUp },
+        { label: "Meetings Booked", value: "24", change: "+8%", trend: "up", icon: Activity },
+        { label: "Avg. Engagement", value: "68%", change: "+3.2%", trend: "up", icon: TrendingUp },
+        { label: "Conversion Rate", value: "3.2%", change: "-0.4%", trend: "down", icon: ArrowUpRight }, // Using ArrowUpRight as placeholder for a generic graph icon if needed
     ];
 
     return (
@@ -21,7 +23,7 @@ export const AnalyticsView = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 {kpis.map((kpi, i) => (
                     <GlassCard key={i} className="p-6">
                         <div className="flex justify-between items-start mb-4">

@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { cn } from "../../lib/utils";
-import { LayoutDashboard, FileText, MessageSquare, CreditCard, FolderOpen, Share2, LogOut, Menu } from "lucide-react";
+import { LayoutDashboard, FileText, MessageSquare, CreditCard, FolderOpen, Share2, LogOut, Menu, Users, Calendar, Settings } from "lucide-react";
 import { useState } from "react";
 
 export const DashboardLayout = () => {
@@ -8,13 +8,16 @@ export const DashboardLayout = () => {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     const navItems = [
-        { name: "Overview", icon: LayoutDashboard, href: "/app" },
-        { name: "Deliverables", icon: FolderOpen, href: "/app/deliverables" },
+        { name: "Dashboard", icon: LayoutDashboard, href: "/app" },
+        { name: "Leads / Clients", icon: Users, href: "/app/leads" },
+        { name: "Meetings", icon: Calendar, href: "/app/meetings" },
         { name: "Proposals", icon: FileText, href: "/app/proposals" },
         { name: "Payments", icon: CreditCard, href: "/app/payments" },
+        { name: "Delivery", icon: FolderOpen, href: "/app/deliverables" },
         { name: "Messages", icon: MessageSquare, href: "/app/messages" },
-        { name: "Social", icon: Share2, href: "/app/social" },
-        { name: "Analytics", icon: LayoutDashboard, href: "/app/analytics" },
+        { name: "Social Auto", icon: Share2, href: "/app/social" },
+        { name: "Analytics", icon: LayoutDashboard, href: "/app/analytics" }, // Reusing LayoutDashboard icon for now or chart if available
+        { name: "Settings", icon: Settings, href: "/app/settings" },
     ];
 
     return (

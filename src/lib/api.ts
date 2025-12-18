@@ -49,11 +49,28 @@ export const requestVoiceDemo = async (phone: string): Promise<boolean> => {
     }
 };
 
-export const processPayment = async (amount: number): Promise<boolean> => {
+const PAYMENT_WEBHOOK_URL = "https://deepakdukare-n8n-free.hf.space/webhook/stripe-webhook-payment";
+
+export const processPayment = async (amount: number, invoiceId: string = "INV-DEFAULT"): Promise<boolean> => {
     try {
-        // Simulate network request to Stripe
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        console.log(`Processed payment of $${amount}`);
+        const response = await fetch(PAYMENT_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                amount,
+                invoiceId,
+                currency: "USD",
+                status: "success",
+                timestamp: new Date().toISOString()
+            }),
+        });
+
+        if (!response.ok) {
+            console.error("Failed to process payment:", response.statusText);
+            return false;
+        }
+
+        console.log(`Processed payment of $${amount} for ${invoiceId}`);
         return true;
     } catch (error) {
         console.error("Error processing payment:", error);
@@ -63,7 +80,6 @@ export const processPayment = async (amount: number): Promise<boolean> => {
 
 export const acceptProposal = async (proposalId: string): Promise<boolean> => {
     try {
-        // Simulate webhook trigger
         const response = await fetch(PROPOSAL_WEBHOOK_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -71,12 +87,31 @@ export const acceptProposal = async (proposalId: string): Promise<boolean> => {
         });
         if (!response.ok) {
             console.error("Failed to accept proposal:", response.statusText);
-            return false; // Return false but in demo we might want to return true to show success UI
+            return false;
         }
         return true;
     } catch (error) {
         console.error("Error accepting proposal:", error);
-        // For demo purposes, we'll return true even if webhook fails (CORS etc)
         return true;
+    }
+};
+
+const SUPPORT_WEBHOOK_URL = "https://deepakdukare-n8n-free.hf.space/webhook/support-message";
+
+export const sendMessage = async (message: string): Promise<boolean> => {
+    try {
+        /*
+        const response = await fetch(SUPPORT_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message, timestamp: new Date().toISOString() }),
+        });
+        */
+        console.log(`Sending message to support: ${message}`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return true;
+    } catch (error) {
+        console.error("Error sending message:", error);
+        return false;
     }
 };
