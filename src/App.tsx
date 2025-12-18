@@ -1,27 +1,39 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import LandingPage from "./pages/LandingPage";
+import { BookingPage } from "./pages/BookingPage";
+import { Login } from "./pages/dashboard/Login";
+import { DashboardLayout } from "./components/dashboard/DashboardLayout";
+import { DashboardHome } from "./pages/dashboard/DashboardHome";
+import { PaymentView } from "./pages/dashboard/PaymentView";
+import { DeliverablesView } from "./pages/dashboard/DeliverablesView";
+import { SupportView } from "./pages/dashboard/SupportView";
+import { SocialMediaView } from "./pages/dashboard/SocialMediaView";
+import { AnalyticsView } from "./pages/dashboard/AnalyticsView";
+import { ProposalViewer } from "./pages/ProposalViewer";
 
-const queryClient = new QueryClient();
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/book" element={<BookingPage />} />
+        <Route path="/proposal/:id" element={<ProposalViewer />} />
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+        {/* Auth Route */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Protected Routes */}
+        <Route path="/app" element={<DashboardLayout />}>
+          <Route index element={<DashboardHome />} />
+          <Route path="payments" element={<PaymentView />} />
+          <Route path="deliverables" element={<DeliverablesView />} />
+          <Route path="messages" element={<SupportView />} />
+          <Route path="social" element={<SocialMediaView />} />
+          <Route path="analytics" element={<AnalyticsView />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
 
 export default App;
