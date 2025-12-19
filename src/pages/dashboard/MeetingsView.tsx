@@ -1,15 +1,19 @@
 import { useState } from "react";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday } from "date-fns";
 import { GlassCard } from "../../components/ui/GlassCard";
-import { Calendar as CalendarIcon, Clock, Video, RefreshCw, Send, Plus, CheckCircle2, MoreHorizontal, FileText, CheckSquare, Sparkles } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Video, RefreshCw, Send, Plus, CheckCircle2, MoreHorizontal, FileText, CheckSquare, Sparkles, Zap } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Textarea } from "../../components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { Badge } from "../../components/ui/badge";
 import { triggerMeetingRequest } from "../../lib/api";
+import { PageHeader } from "../../components/dashboard/PageHeader";
 
 export const MeetingsView = () => {
+    const [currentMonth, setCurrentMonth] = useState(new Date());
     const [isScheduling, setIsScheduling] = useState(false);
     const [scheduleForm, setScheduleForm] = useState({
         lead: "",
@@ -43,47 +47,81 @@ export const MeetingsView = () => {
         }
     };
 
-    // Simple Calendar Grid Generator
+    // Calendar Logic
+    const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
+    const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+
     const generateCalendarDays = () => {
-        const days = [];
-        for (let i = 0; i < 35; i++) {
-            const day = i - 2; // Offset for starting day (approx)
-            days.push(day > 0 && day <= 31 ? day : "");
-        }
-        return days;
+        const monthStart = startOfMonth(currentMonth);
+        const monthEnd = endOfMonth(monthStart);
+        const startDate = startOfWeek(monthStart);
+        const endDate = endOfWeek(monthEnd);
+
+        return eachDayOfInterval({
+            start: startDate,
+            end: endDate
+        });
     };
 
-    import { PageHeader } from "../../components/dashboard/PageHeader";
+
 
     return (
         <div className="space-y-6">
             <PageHeader
                 subtitle="Meetings"
                 helperText="Manage meeting scheduling, confirmations, and outcomes."
-            />
-
-            {/* Integration Status Bar */}
-            <div className="bg-white/5 border border-white/10 rounded-lg p-3 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-6">
-                    <div className="flex items-center gap-2 text-sm text-green-400">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                        </span>
-                        Calendly Connected
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-green-400">
-                        <span className="w-2 h-2 rounded-full bg-green-500" /> Google Calendar Synced
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-green-400">
-                        <span className="w-2 h-2 rounded-full bg-green-500" /> Zoom Active
-                    </div>
+            >
+                <div className="flex gap-2 items-center">
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <button className="flex items-center gap-2 px-3 py-2 bg-green-500/10 rounded-lg text-green-400 text-sm font-medium border border-green-500/20 mr-2 hover:bg-green-500/20 transition-colors cursor-pointer">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                </span>
+                                System Status: Active
+                            </button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-card border-white/10 text-white">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2"><Zap className="w-5 h-5 text-green-400" /> Active System Connections</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 mt-4">
+                                <div className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-bold text-sm">Calendly Integration</span>
+                                        <Badge className="bg-green-500/20 text-green-400 border-0">Connected</Badge>
+                                    </div>
+                                    <p className="text-xs text-white/40 font-mono break-all">
+                                        Syncing real-time availability & booking events.
+                                    </p>
+                                </div>
+                                <div className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-bold text-sm">Google Calendar Sync</span>
+                                        <Badge className="bg-green-500/20 text-green-400 border-0">Synced</Badge>
+                                    </div>
+                                    <p className="text-xs text-white/40 font-mono break-all">
+                                        Two-way synchronization active.
+                                    </p>
+                                </div>
+                                <div className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-bold text-sm">Zoom Meeting Provider</span>
+                                        <Badge className="bg-green-500/20 text-green-400 border-0">Active</Badge>
+                                    </div>
+                                    <p className="text-xs text-white/40 font-mono break-all">
+                                        Generating unique meeting links on booking.
+                                    </p>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                    <Button variant="outline" className="border-white/10 hover:bg-white/5">
+                        <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+                    </Button>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-white/40">
-                    <span>Last sync: 2 mins ago</span>
-                    <button className="hover:text-white transition-colors"><RefreshCw className="w-3 h-3" /></button>
-                </div>
-            </div>
+            </PageHeader>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* 1. Schedule New Meeting (Form) */}
@@ -100,7 +138,7 @@ export const MeetingsView = () => {
 
                     <form onSubmit={handleSchedule} className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Lead (Airtable)</label>
+                            <label className="text-sm font-medium">Lead</label>
                             <Select value={scheduleForm.lead} onValueChange={(val) => setScheduleForm({ ...scheduleForm, lead: val })}>
                                 <SelectTrigger className="bg-white/5 border-white/10">
                                     <SelectValue placeholder="Select Lead" />
@@ -147,29 +185,38 @@ export const MeetingsView = () => {
                 {/* 2 & 3. Quick Calendar & Upcoming Tabs */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Quick Calendar */}
-                    <GlassCard className="p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="font-bold text-lg flex items-center gap-2">
-                                <CalendarIcon className="w-5 h-5 text-primary" /> Quick Calendar
+                    <GlassCard className="p-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-base flex items-center gap-2">
+                                <CalendarIcon className="w-4 h-4 text-primary" /> Quick Calendar
                             </h3>
-                            <div className="flex items-center gap-2 text-sm font-medium">
-                                <button className="p-1 hover:bg-white/10 rounded">&lt;</button>
-                                <span>December 2025</span>
-                                <button className="p-1 hover:bg-white/10 rounded">&gt;</button>
+                            <div className="flex items-center gap-2 text-xs font-medium">
+                                <button onClick={prevMonth} className="p-1 hover:bg-white/10 rounded">&lt;</button>
+                                <span>{format(currentMonth, "MMMM yyyy")}</span>
+                                <button onClick={nextMonth} className="p-1 hover:bg-white/10 rounded">&gt;</button>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-7 gap-1 text-center text-sm">
-                            <div className="text-white/40 py-2">Su</div><div className="text-white/40 py-2">Mo</div><div className="text-white/40 py-2">Tu</div><div className="text-white/40 py-2">We</div><div className="text-white/40 py-2">Th</div><div className="text-white/40 py-2">Fr</div><div className="text-white/40 py-2">Sa</div>
-                            {generateCalendarDays().map((day, i) => (
-                                <div key={i} className={`p-2 rounded-lg relative min-h-[40px] flex items-center justify-center ${day === 18 ? 'bg-primary/20 text-primary font-bold' : 'hover:bg-white/5'}`}>
-                                    {day}
-                                    {/* Mock Indicators */}
-                                    {day === 18 && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-blue-400" />}
-                                    {day === 19 && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-green-400" />}
-                                    {day === 22 && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-blue-400" />}
-                                </div>
-                            ))}
+                        <div className="grid grid-cols-7 gap-px text-center text-xs">
+                            <div className="text-white/40 py-1">Su</div><div className="text-white/40 py-1">Mo</div><div className="text-white/40 py-1">Tu</div><div className="text-white/40 py-1">We</div><div className="text-white/40 py-1">Th</div><div className="text-white/40 py-1">Fr</div><div className="text-white/40 py-1">Sa</div>
+                            {generateCalendarDays().map((day, i) => {
+                                const isCurrentMonth = isSameMonth(day, currentMonth);
+                                const isDayToday = isToday(day);
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`p-1 rounded-md relative min-h-[30px] flex items-center justify-center 
+                                            ${!isCurrentMonth ? 'text-white/20' : 'text-white'}
+                                            ${isDayToday ? 'bg-primary/20 text-primary font-bold' : 'hover:bg-white/5'}
+                                        `}
+                                    >
+                                        {format(day, "d")}
+                                        {/* Mock Indicators for visual flair */}
+                                        {isCurrentMonth && (day.getDate() === 18 || day.getDate() === 22) && <span className="absolute bottom-0.5 w-0.5 h-0.5 rounded-full bg-blue-400" />}
+                                        {isCurrentMonth && day.getDate() === 19 && <span className="absolute bottom-0.5 w-0.5 h-0.5 rounded-full bg-green-400" />}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </GlassCard>
 

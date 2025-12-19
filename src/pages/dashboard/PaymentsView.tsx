@@ -1,14 +1,32 @@
 import { useState } from "react";
 import { GlassCard } from "../../components/ui/GlassCard";
-import { CreditCard, DollarSign, RefreshCw, AlertCircle, CheckCircle2, XCircle, FileText, Send, Clock, Download, ExternalLink, Mail } from "lucide-react";
+import { CreditCard, DollarSign, RefreshCw, AlertCircle, CheckCircle2, XCircle, FileText, Send, Clock, Download, ExternalLink, Mail, Zap } from "lucide-react";
 import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
 import { Badge } from "../../components/ui/badge";
 import { Sheet, SheetContent } from "../../components/ui/sheet";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { sendPaymentConfirmation, sendPaymentReminder } from "../../lib/api";
+import { PageHeader } from "../../components/dashboard/PageHeader";
 
 export const PaymentsView = () => {
     const [selectedTx, setSelectedTx] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isCreateInvoiceOpen, setIsCreateInvoiceOpen] = useState(false);
+    const [newInvoice, setNewInvoice] = useState({ client: "", amount: "", description: "", dueDate: "" });
+
+    const handleCreateInvoice = (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        // Simulate API call
+        setTimeout(() => {
+            setIsLoading(false);
+            setIsCreateInvoiceOpen(false);
+            alert("Invoice created successfully!");
+            setNewInvoice({ client: "", amount: "", description: "", dueDate: "" });
+        }, 1500);
+    };
 
     // Mock Data reflecting standardized fields and states
     const transactions = [
@@ -104,23 +122,106 @@ export const PaymentsView = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold">Payments</h1>
-                    <p className="text-white/60">Monitor invoices, payment confirmations, failures, and reminders.</p>
-                </div>
+
+            <PageHeader
+                subtitle="Payments"
+                helperText="Monitor invoices, payment confirmations, failures, and reminders."
+            >
                 <div className="flex gap-2 items-center">
-                    <span className="text-sm text-green-400 flex items-center gap-1 bg-green-500/10 px-3 py-1 rounded border border-green-500/20">
-                        <CheckCircle2 className="w-3 h-3" /> Stripe Connected
-                    </span>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <button className="flex items-center gap-2 px-3 py-2 bg-green-500/10 rounded-lg text-green-400 text-sm font-medium border border-green-500/20 mr-2 hover:bg-green-500/20 transition-colors cursor-pointer">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                </span>
+                                System Status: Active
+                            </button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-card border-white/10 text-white">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2"><Zap className="w-5 h-5 text-green-400" /> Active System Connections</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 mt-4">
+                                <div className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-bold text-sm">Stripe Payments</span>
+                                        <Badge className="bg-green-500/20 text-green-400 border-0">Connected</Badge>
+                                    </div>
+                                    <p className="text-xs text-white/40 font-mono break-all">
+                                        Processing live payments & subscriptions.
+                                    </p>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                    <Dialog open={isCreateInvoiceOpen} onOpenChange={setIsCreateInvoiceOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="bg-primary hover:bg-primary/90">
+                                <FileText className="w-4 h-4 mr-2" /> Create Invoice
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-card border-white/10 text-white sm:max-w-[425px]">
+                            <DialogHeader>
+                                <DialogTitle>Create New Invoice</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleCreateInvoice} className="space-y-4 mt-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Client Name</label>
+                                    <Input
+                                        placeholder="e.g. Radiant Systems"
+                                        value={newInvoice.client}
+                                        onChange={(e) => setNewInvoice({ ...newInvoice, client: e.target.value })}
+                                        className="bg-white/5 border-white/10"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Amount</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">₹</span>
+                                        <Input
+                                            placeholder="0.00"
+                                            value={newInvoice.amount}
+                                            onChange={(e) => setNewInvoice({ ...newInvoice, amount: e.target.value })}
+                                            className="bg-white/5 border-white/10 pl-8"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Description</label>
+                                    <Textarea
+                                        placeholder="Services rendered..."
+                                        value={newInvoice.description}
+                                        onChange={(e) => setNewInvoice({ ...newInvoice, description: e.target.value })}
+                                        className="bg-white/5 border-white/10"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Due Date</label>
+                                    <Input
+                                        type="date"
+                                        value={newInvoice.dueDate}
+                                        onChange={(e) => setNewInvoice({ ...newInvoice, dueDate: e.target.value })}
+                                        className="bg-white/5 border-white/10 block w-full"
+                                        required
+                                    />
+                                </div>
+                                <div className="pt-4 flex justify-end gap-2">
+                                    <Button type="button" variant="ghost" onClick={() => setIsCreateInvoiceOpen(false)} className="hover:bg-white/10">Cancel</Button>
+                                    <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={isLoading}>
+                                        {isLoading ? "Creating..." : "Create Invoice"}
+                                    </Button>
+                                </div>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                     <Button variant="outline" className="border-white/10 hover:bg-white/5">
                         <RefreshCw className="w-4 h-4 mr-2" /> Refresh
                     </Button>
-                    <Button className="bg-primary hover:bg-primary/90">
-                        <FileText className="w-4 h-4 mr-2" /> Create Invoice
-                    </Button>
                 </div>
-            </div>
+            </PageHeader>
 
             {/* Transaction History Table */}
             <div className="space-y-4">

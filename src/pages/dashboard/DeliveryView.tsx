@@ -4,9 +4,12 @@ import { FolderOpen, UploadCloud, FileText, CheckCircle2, Clock, MessageSquare, 
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../components/ui/sheet";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from "../../components/ui/dialog";
+import { Checkbox } from "../../components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Input } from "../../components/ui/input";
 import { uploadDeliveryAsset } from "../../lib/api";
+import { PageHeader } from "../../components/dashboard/PageHeader";
 
 export const DeliveryView = () => {
     const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -65,18 +68,11 @@ export const DeliveryView = () => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold">Delivery Portal</h1>
-                    <div className="flex items-center gap-2 mt-2 text-white/60">
-                        <span>Project: <strong className="text-white">Radiant Systems – Sales Automation</strong></span>
-                        <span className="mx-2">•</span>
-                        <Badge className="bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/10">
-                            <CheckCircle2 className="w-3 h-3 mr-1" /> In Delivery
-                        </Badge>
-                    </div>
-                </div>
+
+            <PageHeader
+                subtitle="Delivery Portal"
+                helperText="Project: Radiant Systems – Sales Automation"
+            >
                 <div className="flex gap-2">
                     <Button variant="outline" className="border-white/10 hover:bg-white/5">
                         <MessageSquare className="w-4 h-4 mr-2" /> Message Team
@@ -85,7 +81,7 @@ export const DeliveryView = () => {
                         <UploadCloud className="w-4 h-4 mr-2" /> Upload New Asset
                     </Button>
                 </div>
-            </div>
+            </PageHeader>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -196,13 +192,13 @@ export const DeliveryView = () => {
             </div>
 
             {/* Upload Modal */}
-            <Sheet open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                <SheetContent className="w-[400px] border-l-white/10 bg-card/95 backdrop-blur-xl">
-                    <SheetHeader>
-                        <SheetTitle>Upload Deliverable</SheetTitle>
-                        <SheetDescription>Share documents, reports, or assets with the client.</SheetDescription>
-                    </SheetHeader>
-                    <form onSubmit={handleUpload} className="space-y-6 mt-8">
+            <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                <DialogContent className="bg-card border-white/10 text-white sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Upload Deliverable</DialogTitle>
+                        <DialogDescription className="text-white/60">Share documents, reports, or assets with the client.</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleUpload} className="space-y-6 mt-4">
                         <div className="space-y-2">
                             <label className="text-sm font-medium">File Name (Mock)</label>
                             <Input
@@ -232,16 +228,22 @@ export const DeliveryView = () => {
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Visibility</label>
-                            <div className="p-3 bg-white/5 rounded-lg border border-white/10 space-y-2">
-                                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                                    <input type="checkbox" checked readOnly className="rounded bg-white/10 border-white/20" />
-                                    Client can view
-                                </label>
-                                <label className="flex items-center gap-2 text-sm cursor-pointer text-white/60">
-                                    <input type="checkbox" disabled className="rounded bg-white/10 border-white/20" />
-                                    Notify client via email
-                                </label>
-                            </div>
+                            <Select defaultValue="client">
+                                <SelectTrigger className="bg-white/5 border-white/10">
+                                    <SelectValue placeholder="Select Visibility" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="client">Client can view</SelectItem>
+                                    <SelectItem value="internal">Internal only</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                            <input type="checkbox" id="notify" className="rounded bg-white/10 border-white/20" />
+                            <label htmlFor="notify" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                Notify client via email
+                            </label>
                         </div>
 
                         <Button type="submit" className="w-full font-bold bg-primary hover:bg-primary/90" disabled={isUploading}>
@@ -249,8 +251,8 @@ export const DeliveryView = () => {
                             {isUploading ? "Uploading..." : "Upload Asset"}
                         </Button>
                     </form>
-                </SheetContent>
-            </Sheet>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

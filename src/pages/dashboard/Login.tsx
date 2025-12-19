@@ -35,7 +35,8 @@ export const Login = () => {
 
             <GlassCard className="max-w-md w-full p-8">
                 <div className="text-center mb-8">
-                    <h1 className="text-2xl font-serif font-bold mb-2">Welcome Back</h1>
+                    <h2 className="text-3xl font-serif font-bold mb-6">Cervoa<span className="text-primary">.</span></h2>
+                    <h1 className="text-xl font-bold mb-2">Welcome Back</h1>
                     <p className="text-white/60 text-sm">Access your client dashboard</p>
                 </div>
 

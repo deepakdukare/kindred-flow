@@ -9,7 +9,7 @@ interface PageHeaderProps {
 }
 
 export const PageHeader = ({
-    title = "Deepak Dukare · Admin",
+    title,
     subtitle,
     helperText,
     children
@@ -17,7 +17,7 @@ export const PageHeader = ({
     return (
         <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-8">
             <div>
-                <h1 className="text-sm font-bold text-primary tracking-wide uppercase mb-1">{title}</h1>
+                {title && <h1 className="text-sm font-bold text-primary tracking-wide uppercase mb-1">{title}</h1>}
                 <h2 className="text-3xl font-bold text-white mb-2">{subtitle}</h2>
                 {helperText && (
                     <p className="text-white/50 text-sm max-w-xl">{helperText}</p>

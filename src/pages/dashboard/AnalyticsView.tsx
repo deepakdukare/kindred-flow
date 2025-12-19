@@ -9,6 +9,7 @@ import { Badge } from "../../components/ui/badge";
 import { Progress } from "../../components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { cn } from "../../lib/utils";
+import { PageHeader } from "../../components/dashboard/PageHeader";
 
 export const AnalyticsView = () => {
     // Mock Data reflecting the requested "Single-Glance" philosophy
@@ -33,40 +34,42 @@ export const AnalyticsView = () => {
 
     return (
         <div className="space-y-6">
+
             {/* 1. Header & Filters */}
-            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 sticky top-0 bg-background/95 backdrop-blur z-10 py-4 border-b border-white/5 -mx-6 px-6">
-                <div>
-                    <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-                    <p className="text-white/60">Single-glance business health & ROI.</p>
-                </div>
-                <div className="flex flex-wrap gap-2 items-center">
-                    <Select defaultValue="7d">
-                        <SelectTrigger className="w-[100px] bg-white/5 border-white/10">
-                            <SelectValue placeholder="Range" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="7d">Last 7D</SelectItem>
-                            <SelectItem value="30d">Last 30D</SelectItem>
-                            <SelectItem value="90d">Last 90D</SelectItem>
-                        </SelectContent>
-                    </Select>
+            <div className="sticky top-0 bg-background/95 backdrop-blur z-10 py-4 border-b border-white/5 -mx-6 px-6">
+                <PageHeader
+                    subtitle="Analytics Dashboard"
+                    helperText="Single-glance business health & ROI."
+                >
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <Select defaultValue="7d">
+                            <SelectTrigger className="w-[100px] bg-white/5 border-white/10">
+                                <SelectValue placeholder="Range" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="7d">Last 7D</SelectItem>
+                                <SelectItem value="30d">Last 30D</SelectItem>
+                                <SelectItem value="90d">Last 90D</SelectItem>
+                            </SelectContent>
+                        </Select>
 
-                    <Select defaultValue="all">
-                        <SelectTrigger className="w-[120px] bg-white/5 border-white/10">
-                            <SelectValue placeholder="Source" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Sources</SelectItem>
-                            <SelectItem value="apollo">Apollo</SelectItem>
-                            <SelectItem value="clay">Clay</SelectItem>
-                            <SelectItem value="organic">Organic</SelectItem>
-                        </SelectContent>
-                    </Select>
+                        <Select defaultValue="all">
+                            <SelectTrigger className="w-[120px] bg-white/5 border-white/10">
+                                <SelectValue placeholder="Source" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Sources</SelectItem>
+                                <SelectItem value="apollo">Apollo</SelectItem>
+                                <SelectItem value="clay">Clay</SelectItem>
+                                <SelectItem value="organic">Organic</SelectItem>
+                            </SelectContent>
+                        </Select>
 
-                    <Button variant="outline" className="border-white/10 hover:bg-white/5">
-                        <Download className="w-4 h-4 mr-2" /> Export
-                    </Button>
-                </div>
+                        <Button variant="outline" className="border-white/10 hover:bg-white/5">
+                            <Download className="w-4 h-4 mr-2" /> Export
+                        </Button>
+                    </div>
+                </PageHeader>
             </div>
 
             {/* 2. KPI Snapshot Row */}

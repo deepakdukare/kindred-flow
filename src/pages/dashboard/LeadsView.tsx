@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { GlassCard } from "../../components/ui/GlassCard";
-import { Table, User, MoreHorizontal, Filter, Search, Phone, Mail, Calendar } from "lucide-react";
+import { Table, User, MoreHorizontal, Filter, Search, Phone, Mail, Calendar, RefreshCw, Zap } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../components/ui/sheet";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
@@ -30,11 +31,46 @@ export const LeadsView = () => {
                 subtitle="Leads & Clients"
                 helperText="Manage your pipeline and track interactions."
             >
-                <div className="flex gap-4 items-center">
-                    <div className="relative w-64 hidden md:block">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-                        <Input placeholder="Search name or company..." className="pl-10 bg-white/5 border-white/10" />
-                    </div>
+                <div className="flex gap-2 items-center">
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <button className="flex items-center gap-2 px-3 py-2 bg-green-500/10 rounded-lg text-green-400 text-sm font-medium border border-green-500/20 mr-2 hover:bg-green-500/20 transition-colors cursor-pointer">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                </span>
+                                System Status: Active
+                            </button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-card border-white/10 text-white">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2"><Zap className="w-5 h-5 text-green-400" /> Active System Connections</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 mt-4">
+                                <div className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-bold text-sm">Airtable Marketing Base</span>
+                                        <Badge className="bg-green-500/20 text-green-400 border-0">Connected</Badge>
+                                    </div>
+                                    <p className="text-xs text-white/40 font-mono break-all">
+                                        Syncing new leads and updates.
+                                    </p>
+                                </div>
+                                <div className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-bold text-sm">Apollo Lead Enrichment</span>
+                                        <Badge className="bg-green-500/20 text-green-400 border-0">Listening</Badge>
+                                    </div>
+                                    <p className="text-xs text-white/40 font-mono break-all">
+                                        Enriching incoming leads automatically.
+                                    </p>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                    <Button variant="outline" className="border-white/10 hover:bg-white/5">
+                        <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+                    </Button>
                 </div>
             </PageHeader>
 
