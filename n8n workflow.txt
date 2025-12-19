@@ -1,0 +1,3184 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "44776aa8-cf36-4eaa-abcc-6ed69a116ec1",
+      "name": "Daily Schedule 8AM UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2016,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "path": "2125b178-8501-48d4-9bdc-a7b5bb690618",
+        "formTitle": "Apollo Lead Search Configuration",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Industry",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "SaaS"
+                  },
+                  {
+                    "option": "B2B Services"
+                  },
+                  {
+                    "option": "FinTech"
+                  },
+                  {
+                    "option": "HealthTech"
+                  },
+                  {
+                    "option": "E-commerce"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Company Size",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "100"
+                  },
+                  {
+                    "option": "500"
+                  },
+                  {
+                    "option": "1000"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Location",
+              "placeholder": "City name",
+              "defaultValue": "Pune",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Job Titles",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "CEO"
+                  },
+                  {
+                    "option": "CTO"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Daily Lead Limit",
+              "fieldType": "number",
+              "defaultValue": 100,
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fb11929a-3cc7-434c-acab-582ea0e95be3",
+      "name": "Apollo Search Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2032,
+        496
+      ],
+      "webhookId": "2125b178-8501-48d4-9bdc-a7b5bb690618"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": {
+          "values": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "id": "1f6e5503-6a59-4607-9a19-c44a2a443abc",
+      "name": "Merge Schedule + Form",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        -1728,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Use form data if available, else defaults\nconst inputData = $input.all()[0].json;\nconst defaults = {\n  industries: ['SaaS', 'B2B Services'],\n  locations: ['United States', 'United Kingdom', 'Europe'],\n  job_titles: ['CEO', 'CRO', 'Head of Sales', 'Founder'],\n  lead_limit: 100\n};\n\nreturn [{\n  json: {\n    industries: inputData.industry || defaults.industries,\n    locations: inputData.location || defaults.locations,\n    job_titles: inputData.job_titles || defaults.job_titles,\n    lead_limit: inputData.lead_limit || defaults.lead_limit\n  }\n}];"
+      },
+      "id": "bdda2b82-59fa-47e1-b5fe-b2c2c2f657c2",
+      "name": "Prepare Apollo Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1536,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/v1/mixed_people/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.APOLLO_API_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"person_titles\": {{$json.job_titles}},\n  \"q_organization_industry_tags\": {{$json.industries}},\n  \"organization_locations\": {{$json.locations}},\n  \"organization_num_employees_ranges\": [\"10,500\"],\n  \"per_page\": {{$json.lead_limit}}\n}",
+        "options": {}
+      },
+      "id": "662508e3-b1b3-461e-acb4-07c4de35bfb6",
+      "name": "Apollo Lead Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -1344,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const people = $json.people || [];\n\nreturn people.map(p => ({\n  json: {\n    name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),\n    email: p.email || '',\n    phone: p.phone_numbers?.[0]?.sanitized_number || '',\n    company: p.organization?.name || '',\n    title: p.title || '',\n    linkedin_url: p.linkedin_url || '',\n    company_size: p.organization?.num_employees_estimate || 0,\n    industry: p.organization?.industry_tags?.[0] || '',\n    source: 'Apollo',\n    fetched_at: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "b2b59fa0-acd8-4849-afb5-cba92cb50b07",
+      "name": "Normalize Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1184,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Phase 1: Lead Discovery & Enrichment\n\nDaily automated search and enrichment via Apollo & Clay.",
+        "height": 464,
+        "width": 1408
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2128,
+        176
+      ],
+      "typeVersion": 1,
+      "id": "877e9954-b671-47c5-b847-583853427c5c",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.clay.run/v1/enrich",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.CLAY_API_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"inputs\": {\n    \"company_name\": {{$json.company}},\n    \"person_name\": {{$json.name}},\n    \"person_title\": {{$json.title}},\n    \"linkedin_url\": {{$json.linkedin_url}}\n  },\n  \"enrichments\": [\n    \"company_revenue\",\n    \"funding_stage\",\n    \"technology_stack\",\n    \"company_growth_rate\",\n    \"recent_news\",\n    \"decision_maker\"\n  ]\n}",
+        "options": {}
+      },
+      "id": "77a3df38-d853-4203-9cfc-c97c9a1a1a54",
+      "name": "Clay Enrichment API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -1008,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const enrichment = $json.data || {};\nconst inputItem = $input.item.json;\n\nreturn [{\n  json: {\n    ...inputItem,\n    company_revenue: enrichment.company_revenue || null,\n    funding_stage: enrichment.funding_stage || null,\n    technology_stack: enrichment.technology_stack || [],\n    company_growth_rate: enrichment.company_growth_rate || null,\n    recent_news: enrichment.recent_news || [],\n    decision_maker: enrichment.decision_maker || false,\n    enrichment_source: 'Clay',\n    enriched_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "1b653997-4319-4a35-96e7-1fb133ad9db5",
+      "name": "Normalize Enriched Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $input.item.json;\n\n// Parse revenue\nlet company_revenue_num = parseFloat(\n  (lead.company_revenue || '').replace(/[$,]/g, '')\n) || 0;\nlet revenue_millions = company_revenue_num / 1000000;\n\n// Company factors (max 50)\nlet size_factor = Math.min((lead.company_size / 500) * 20, 20);\nlet revenue_factor = Math.min((revenue_millions / 100) * 15, 15);\nlet funding_factor = 0;\nif (lead.recent_news && lead.recent_news.some(news => \n  news.toLowerCase().includes('funding') || news.toLowerCase().includes('raised')\n)) {\n  funding_factor = 15;\n} else if (lead.funding_stage) {\n  const stageWeights = {\n    'Seed': 5,\n    'Series A': 10,\n    'Series B': 12,\n    'Series C': 15,\n    'Public': 15\n  };\n  funding_factor = stageWeights[lead.funding_stage] || 0;\n}\n\n// Industry factors (max 20)\nlet industry_factor = 0;\nconst leadIndLower = (lead.industry || '').toLowerCase();\nconst exactMatches = ['saas', 'b2b services'];\nconst adjacentMatches = ['software', 'tech', 'it services', 'cloud', 'enterprise software', 'b2b', 'consulting'];\nif (exactMatches.some(match => leadIndLower.includes(match))) {\n  industry_factor = 20;\n} else if (adjacentMatches.some(match => leadIndLower.includes(match))) {\n  industry_factor = 10;\n}\n\n// Role factors (max 10)\nlet role_factor = 0;\nconst titleLower = (lead.title || '').toLowerCase();\nif (['ceo', 'cro', 'founder', 'head of sales'].some(t => titleLower.includes(t))) {\n  role_factor = 10;\n} else if (['vp', 'director', 'manager', 'head'].some(t => titleLower.includes(t))) {\n  role_factor = 5;\n}\n\n// Engagement factors (max 20, placeholders for initial leads)\nlet email_engagement = 0; // TODO: Integrate with email tool (e.g., Klaviyo/SendGrid) for opens/total_sent\nlet profile_completeness = lead.linkedin_url && lead.linkedin_url.includes('linkedin.com/in/') ? 80 : 50; // Assume based on presence\nlet linkedin_engagement = (profile_completeness / 100) * 10;\n\n// Final score (0-100 scale)\nlet final_score = size_factor + revenue_factor + funding_factor + \n                 industry_factor + role_factor + \n                 email_engagement + linkedin_engagement;\n\n// Segmentation\nlet segment = final_score >= 70 ? 'Hot' : (final_score >= 50 ? 'Warm' : 'Cold');\n\nreturn [{\n  json: {\n    ...lead,\n    final_score: Math.round(final_score),\n    segment: segment,\n    industry_factor: industry_factor,\n    role_factor: role_factor\n  }\n}];"
+      },
+      "id": "5ea188dc-ec25-478d-9c61-4d6c35a87813",
+      "name": "Calculate Dynamic Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calculate quality score for each lead (Phase 1 validation)\nconst lead = $json;\n\n// Validation helpers\nfunction isValidEmail(email) {\n  return email && email.includes('@') && email.includes('.');\n}\n\nfunction isValidPhone(phone) {\n  return phone && phone.length >= 10;\n}\n\nfunction isLinkedinVerified(linkedin_url) {\n  return linkedin_url && linkedin_url.includes('linkedin.com/in/');\n}\n\nfunction isActiveCompany(revenue) {\n  const revNum = parseFloat((revenue || '').replace(/[$,]/g, '')) || 0;\n  return revNum > 0;\n}\n\n// Use enriched decision_maker for consistency\n\n// Industry match (strict for validation)\nconst industryMatch = ['SaaS', 'B2B Services'].some(ind => \n  lead.industry.toLowerCase().includes(ind.toLowerCase())\n);\n\n// Scores\nconst score = \n  (isValidEmail(lead.email) ? 25 : 0) +\n  (isValidPhone(lead.phone) ? 15 : 0) +\n  (isLinkedinVerified(lead.linkedin_url) ? 10 : 0) +\n  (isActiveCompany(lead.company_revenue) ? 20 : 0) +\n  (lead.decision_maker ? 15 : 0);\n\n// Flags for logic (do not override existing decision_maker or industry_match)\nreturn [{\n  json: {\n    ...lead,\n    quality_score: score,\n    email_valid: isValidEmail(lead.email),\n    phone_valid: isValidPhone(lead.phone),\n    linkedin_verified: isLinkedinVerified(lead.linkedin_url),\n    company_active: isActiveCompany(lead.company_revenue),\n    industry_match: industryMatch,\n    company_size_valid: lead.company_size >= 10,\n    email_suspicious: !isValidEmail(lead.email) && lead.email !== '',\n    validation_status: 'pending'\n  }\n}];"
+      },
+      "id": "d1c2f6a5-b5fe-4d98-afe7-86028a27004d",
+      "name": "Calculate Quality Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition1",
+              "leftValue": "={{ $json.quality_score }}",
+              "rightValue": 50,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            },
+            {
+              "id": "condition2",
+              "leftValue": "={{ $json.company_size_valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            },
+            {
+              "id": "condition3",
+              "leftValue": "={{ $json.industry_match }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            },
+            {
+              "id": "condition4",
+              "leftValue": "={{ $json.email_valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c90adf16-33f9-4b9f-a575-c0b255588c9f",
+      "name": "Lead Validation IF",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "994bef5b-8bd0-49e8-be0b-0b681a774b15",
+      "name": "Send to Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "operation": "equal",
+              "value2": "Hot"
+            },
+            {
+              "operation": "equal",
+              "value2": "Warm"
+            },
+            {
+              "operation": "equal",
+              "value2": "Cold"
+            }
+          ]
+        },
+        "fallbackOutput": 3
+      },
+      "id": "a05b543c-6242-423a-b5ac-82c5998b02a3",
+      "name": "Route to Campaign",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [
+        144,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sendgrid.com/v3/mail/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.SENDGRID_API_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"personalizations\": [{\n    \"to\": [{\"email\": \"{{$json.email}}\"}],\n    \"dynamic_template_data\": {\n      \"name\": \"{{$json.name}}\",\n      \"company\": \"{{$json.company}}\",\n      \"subject\": \"Immediate Outreach: Tailored for {{ $json.company }}\"\n    }\n  }],\n  \"from\": {\"email\": \"your@company.com\"},\n  \"template_id\": \"hot_day1_template\"\n}",
+        "options": {}
+      },
+      "id": "180489ef-3fb0-429d-b3b4-2ac91dae9f2d",
+      "name": "Hot: Immediate Outreach Day 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        336,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Schedule follow-ups (Day 3,5) via separate workflow or Wait node\n// Log or update Airtable with sent status\nconst lead = $json;\nlead.campaign_triggered = 'Hot Day 1';\nreturn [{ json: lead }];"
+      },
+      "id": "4289c11f-cf3a-42f2-ba13-c7f72950e518",
+      "name": "Hot Follow-up Scheduler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sendgrid.com/v3/mail/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.SENDGRID_API_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"personalizations\": [{\n    \"to\": [{\"email\": \"{{$json.email}}\"}],\n    \"dynamic_template_data\": {\n      \"name\": \"{{$json.name}}\",\n      \"company\": \"{{$json.company}}\",\n      \"subject\": \"Nurture: Insights for {{ $json.company }}\"\n    }\n  }],\n  \"from\": {\"email\": \"your@company.com\"},\n  \"template_id\": \"warm_day1_template\"\n}",
+        "options": {}
+      },
+      "id": "1d514eb6-8435-49c1-b44e-10eeee20c729",
+      "name": "Warm: Nurture Day 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        352,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Schedule follow-ups (Day 5,10)\nconst lead = $json;\nlead.campaign_triggered = 'Warm Day 1';\nreturn [{ json: lead }];"
+      },
+      "id": "517e7a7c-dc69-40e3-871a-53881eee6085",
+      "name": "Warm Follow-up Scheduler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sendgrid.com/v3/mail/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.SENDGRID_API_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"personalizations\": [{\n    \"to\": [{\"email\": \"{{$json.email}}\"}],\n    \"dynamic_template_data\": {\n      \"name\": \"{{$json.name}}\",\n      \"company\": \"{{$json.company}}\",\n      \"subject\": \"Long-term: Building Value for {{ $json.company }}\"\n    }\n  }],\n  \"from\": {\"email\": \"your@company.com\"},\n  \"template_id\": \"cold_day1_template\"\n}",
+        "options": {}
+      },
+      "id": "e2dc67b0-1b1b-4129-bdf1-cee32de0c8b5",
+      "name": "Cold: Long-term Day 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        400,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// TODO: Schedule follow-ups (Day 15,30)\nconst lead = $json;\nlead.campaign_triggered = 'Cold Day 1';\nreturn [{ json: lead }];"
+      },
+      "id": "d6fbc4f3-59ad-40b6-8c40-aff874fa15cd",
+      "name": "Cold Follow-up Scheduler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $json;\nlead.validation_status = 'Archived - Low Score or Invalid';\nreturn [{ json: lead }];"
+      },
+      "id": "e5308cbb-9832-459a-adfd-05f0ec38bba9",
+      "name": "Archive Low Quality",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition1",
+              "leftValue": "={{ $json.email_suspicious }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9abbe316-838e-4fd4-b943-715771f4a3e5",
+      "name": "Manual Review IF",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        160,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// For manual review queue (e.g., log to console or send to Slack/Email)\nconst lead = $json;\nlead.validation_status = 'Manual Review - Suspicious Email';\n// TODO: Integrate with Slack or Airtable Manual Queue\nconsole.log('Manual Review Needed:', lead.email, lead.name);\nreturn [{ json: lead }];"
+      },
+      "id": "9ab7c8a2-3f4e-44f4-b8f5-08e498edf0f3",
+      "name": "Queue for Manual Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $json;\nlead.validation_status = 'Archived - Other Invalid';\nreturn [{ json: lead }];"
+      },
+      "id": "56c4e470-34df-4258-bf9e-30e9e4ffc93c",
+      "name": "Archive Other Invalid",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Phase 2: Lead Scoring & Segmentation\n\nCalculate dynamic score based on company, industry/role, and engagement factors.\nSegment into Hot (70+), Warm (50-69), Cold (<50).\n\nLead Validation & Scoring\n\nApply IF/THEN logic and quality scoring. Qualified leads → Airtable.\nLow score/invalid → Archive. Suspicious → Manual review.\n\nRoute to Campaign\n\nBranch qualified leads by segment to trigger email cadences.\nHot: Day 1,3,5 | Warm: Day 1,5,10 | Cold: Day 1,15,30\nTODO: Use Wait/Schedule for follow-ups or separate workflows.",
+        "height": 646,
+        "width": 1752
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -704,
+        144
+      ],
+      "typeVersion": 1,
+      "id": "6be3fc84-9870-4c86-9270-c200a7ad4bbf",
+      "name": "Scoring Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "23835b29-24c2-4cf2-8adb-299bc8b6f062",
+      "name": "Update Lead",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        96,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return[{json:{recordId:$input.first().json.id,segment:'Cold',emailInvalid:true}}];"
+      },
+      "id": "9345ee0c-74ed-4502-8423-6708b063153a",
+      "name": "Handle Bounce",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead=$input.first().json.fields;const score=lead.Engagement_Score||0;return[{json:{recordId:$input.first().json.id,newScore:score+20,segment:'Hot',lastEngagement:new Date().toISOString(),email:lead.Email}}];"
+      },
+      "id": "6e6a289c-c9de-429a-ade4-8e2390d33179",
+      "name": "Handle Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        1104
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead=$input.first().json.fields;const score=lead.Engagement_Score||0;return[{json:{recordId:$input.first().json.id,newScore:score+10,lastEngagement:new Date().toISOString(),clickDestination:$json.url.includes('calendly')?'demo':'proposal'}}];"
+      },
+      "id": "4cdec697-5c37-4a16-9dd6-ff3ecac9c62d",
+      "name": "Handle Click",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        1008
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead=$input.first().json.fields;const score=lead.Engagement_Score||0;const bonus=lead.Last_Engagement?5:10;return[{json:{recordId:$input.first().json.id,newScore:score+bonus,lastEngagement:new Date().toISOString()}}];"
+      },
+      "id": "3a49c8c3-2fbc-4512-ae69-c56a7def61c3",
+      "name": "Handle Open",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        896
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{$json.event}}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "opened",
+              "outputKey": "opened"
+            },
+            {
+              "value2": "clicked",
+              "outputKey": "clicked"
+            },
+            {
+              "value2": "replied",
+              "outputKey": "replied"
+            },
+            {
+              "value2": "hard_bounce",
+              "outputKey": "hard_bounce"
+            }
+          ]
+        }
+      },
+      "id": "b3d090a4-6b6e-4523-acce-f1336dbbc107",
+      "name": "Event Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "id": "12eae6f2-deb7-4d63-8860-289bb5f82fd6",
+      "name": "Find Lead",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -592,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $json;\nreturn [{ json: { email: p.email || p.to || '', event: p.event || p.type || '', url: p.link || '' } }];"
+      },
+      "id": "2c58e103-adc1-4028-bae3-ba8451cda914",
+      "name": "Normalize Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Engagement Tracking & Re-Scoring",
+        "height": 320,
+        "width": 1072
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -896,
+        944
+      ],
+      "typeVersion": 1,
+      "id": "fa0f4c2e-aa0d-4b7e-829b-9cc893b28288",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Phase 3 :  Brevo Email Campaign Trigger",
+        "height": 288,
+        "width": 1168
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2112,
+        960
+      ],
+      "typeVersion": 1,
+      "id": "4d850f1e-555c-49e4-9f9b-5b04d39ba151",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 8
+            }
+          ]
+        }
+      },
+      "id": "24af31eb-4e14-441f-860e-7ec24685be20",
+      "name": "Cron Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -2080,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "YOUR_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Leads"
+        }
+      },
+      "id": "6f3d3448-69e7-4835-ba69-4c25914a050e",
+      "name": "Fetch Warm Leads",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1824,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const f = item.json.fields;\n  return {\n    json: {\n      email: f.Email,\n      subject: `${f.First_Name}, unlock growth insights`,\n      body: `<p>Hi ${f.First_Name},</p><p>We help companies like ${f.Company} grow faster.</p><p><a href='https://calendly.com/yourcompany/demo'>Book a demo</a></p>`,\n      recordId: item.json.id,\n      totalEmails: f.Total_Emails || 0\n    }\n  };\n});"
+      },
+      "id": "957abbb2-9569-4aaa-8066-3b41827e1074",
+      "name": "Personalize Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1616,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brevo.com/v3/smtp/email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "BREVO_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"to\":[{\"email\":$json.email}],\"subject\":$json.subject,\"htmlContent\":$json.body,\"sender\":{\"email\":\"noreply@yourcompany.com\",\"name\":\"Your Company\"}}",
+        "options": {}
+      },
+      "id": "87519d80-57cd-4943-962e-7818f8235c56",
+      "name": "Send Email (Brevo)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -1424,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "YOUR_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "43e8bc18-f8ec-4103-b643-3e17ddff0932",
+      "name": "Log Email Metadata",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1168,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "meeting-request-trigger",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "872dc06e-3bc3-479b-82df-258434430db5",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -2064,
+        1536
+      ],
+      "webhookId": "meeting_request_webhook_id",
+      "notes": "Triggered from Phase 3 reply/interest"
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "id": "663b04bc-a63c-4904-ab1a-441af8903393",
+      "name": "Airtable Lookup Lead",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1840,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.calendly.com/scheduled_events/available_times",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "your_calendly_event_uri"
+            },
+            {
+              "name": "date_range",
+              "value": "next_7_days"
+            },
+            {
+              "name": "count",
+              "value": "5"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $credentials.calendly.key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6eee3dbf-f515-461f-b770-a036b5b7bbda",
+      "name": "Get Calendly Slots",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1632,
+        1536
+      ],
+      "notes": "Fetches 3-5 available slots"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Format 3-5 slots into email body\nconst slots = $input.first().json.resource || [];\nconst lead = $('Airtable Lookup Lead').first().json.fields;\nconst slotLinks = slots.slice(0,5).map(slot => `<li><a href=\"${slot.schedule_url}\">${new Date(slot.start_time).toLocaleString()}</a></li>`).join('');\nconst body = `<html><body><p>Hi ${lead.First_Name},</p><p>Great to hear from you! Here are suggested times for our discovery call:</p><ul>${slotLinks}</ul><p>Agenda: Discuss your goals at ${lead.Company}. Prep: <a href=\"https://yourcompany.com/background.pdf\">Company Background</a>. Optional survey: <a href=\"https://typeform.com/your-survey\">5-min Prep</a>.</p><p>Best,<br>Your Team</p></body></html>`;\nreturn [{ json: { body: body, email: lead.Email, firstName: lead.First_Name, recordId: $('Airtable Lookup Lead').first().json.id } }];"
+      },
+      "id": "18eab8c3-8516-4396-8639-0c6cc3b9a979",
+      "name": "Personalize Email with Slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1408,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "events": [
+          "invitee.created",
+          "invitee.canceled"
+        ]
+      },
+      "id": "9b1c4194-decb-4c60-9eff-63063fdba31a",
+      "name": "Calendly Trigger",
+      "type": "n8n-nodes-base.calendlyTrigger",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        1520
+      ],
+      "webhookId": "41cc7c21-9419-4123-8ede-e1ed0f65e411",
+      "credentials": {},
+      "notes": "Webhook for booking_confirmed (use invitee.created if confirmed on create)"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst eventData = $input.first().json.payload.event;\nconst attendeeEmail = $input.first().json.payload.invitee.email;\nconst lead = $('Airtable Lookup Lead1').first().json.fields;\nconst startTime = new Date(eventData.start_time);\nconst endTime = new Date(eventData.end_time);\nreturn [{ json: { \n  eventData: eventData,\n  attendeeEmail: attendeeEmail,\n  lead: lead,\n  recordId: $('Airtable Lookup Lead1').first().json.id,\n  startTime: startTime.toISOString(),\n  endTime: endTime.toISOString(),\n  eventUri: eventData.uri \n} }];"
+      },
+      "id": "3b493eda-ffce-4aff-b592-eef99be37007",
+      "name": "Extract Event Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "topic": "Discovery Call with {{$json.lead.Company}}",
+        "additionalFields": {
+          "settings": {}
+        }
+      },
+      "id": "bae0b0a3-f673-4b83-a78e-f2942f995873",
+      "name": "Zoom Create Meeting",
+      "type": "n8n-nodes-base.zoom",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        1408
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { zoomUrl: $input.first().json.join_url } }];"
+      },
+      "id": "3cb18291-84a9-4106-8532-f187f5ae50e1",
+      "name": "Get Zoom URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst lead = $('Extract Event Details').first().json.lead;\nconst zoomUrl = $('Get Zoom URL').first().json.zoomUrl;\nconst startTime = new Date($('Extract Event Details').first().json.startTime).toLocaleString();\nconst agenda = '<ul><li>Meeting agenda: Discuss goals</li><li>Zoom: ' + zoomUrl + '</li><li>Prep: <a href=\"https://yourcompany.com/background.pdf\">Background</a></li><li>Questions: What challenges are you facing?</li><li>Survey: <a href=\"https://typeform.com/your-survey\">Optional 10-min</a></li></ul>';\nconst body = `<html><body><p>Hi ${lead.First_Name},</p><p>Confirmed for ${startTime}! ${agenda}</p><p>Best,<br>Your Team</p></body></html>`;\nreturn [{ json: { body: body, email: $('Extract Event Details').first().json.attendeeEmail, firstName: lead.First_Name } }];"
+      },
+      "id": "ad4a57c7-3958-4160-80d4-a7f423eaedf1",
+      "name": "Personalize Confirmation Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "7866ff07-62da-463c-a087-5164fc357325",
+      "name": "Airtable Update Status (Step 9)",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        336,
+        1712
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "id": "7be34721-cef5-4aae-acf2-0ea69004e794",
+      "name": "Airtable Lookup Lead1",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -704,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        1616
+      ],
+      "id": "29edfaff-2fb6-4542-b7f8-d82c7aeb129f",
+      "name": "Create an event"
+    },
+    {
+      "parameters": {
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.sendInBlue",
+      "typeVersion": 1,
+      "position": [
+        400,
+        1536
+      ],
+      "id": "072cbf26-5ffd-4882-8766-33201c25a50b",
+      "name": "Send a transactional email"
+    },
+    {
+      "parameters": {
+        "resource": "sender",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.sendInBlue",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        1536
+      ],
+      "id": "b61ec02c-1769-4599-b370-bc9b42faec41",
+      "name": "Create a sender"
+    },
+    {
+      "parameters": {
+        "content": "##  Phase 4 : MEETING SCHEDULING EMAIL ",
+        "height": 288,
+        "width": 1168
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2144,
+        1408
+      ],
+      "typeVersion": 1,
+      "id": "a62e9c66-7416-4c10-856e-367935823c45",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Phase 5: MEETING SCHEDULING",
+        "height": 480,
+        "width": 1504
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -928,
+        1408
+      ],
+      "typeVersion": 1,
+      "id": "fa6c199f-e361-49a8-8547-5a106ad64aba",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "id": "420f0c4d-176a-427f-a728-7eea9c62371e",
+      "name": "Find Lead in Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -2000,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $node[\"Find Lead in Airtable\"].json[\"records\"].length > 0 }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "243b0ea6-0b59-4595-ba23-6babe52b26f8",
+      "name": "IF Lead Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1776,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "11b2c889-3d5b-4558-9a4e-4856a0fcb691",
+      "name": "Update Existing Lead",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1552,
+        2016
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "b00595a7-9d93-4b69-bc94-7a6eede8a8a1",
+      "name": "Create New Lead",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1552,
+        2224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.next_action?.toLowerCase() }}",
+              "operation": "contains",
+              "value2": "schedule"
+            }
+          ]
+        }
+      },
+      "id": "6353fa22-6d87-4dee-9d1e-79523d2c248c",
+      "name": "IF Schedule Meeting?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1328,
+        2128
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voice-agent-webhook",
+        "options": {}
+      },
+      "id": "53b57979-50e4-42ad-8a61-133d49238fa6",
+      "name": "Webhook Trigger1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -2208,
+        2128
+      ],
+      "webhookId": "voice-agent-webhook"
+    },
+    {
+      "parameters": {
+        "content": "## PHASE 6: AI VOICE AGENT STRATEGY",
+        "height": 480,
+        "width": 1408
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2224,
+        1936
+      ],
+      "typeVersion": 1,
+      "id": "674cc9cd-26dd-40c8-a772-42aeef70aa39",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "operation": "sendTemplate",
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.sendInBlue",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        2112
+      ],
+      "id": "28367929-762e-4010-b25d-ff049539f554",
+      "name": "Send Calendly Email"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appXXXXXXXXXXXXXX"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tblLeads"
+        },
+        "id": "={{ $json.recordId }}",
+        "options": {}
+      },
+      "id": "1c35d958-da24-41a0-abd6-53e631408f4c",
+      "name": "Get Lead from Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        2080
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const f = $json.fields;\nconst pain = (f['Pain Points'] || []).join(', ');\nreturn [{ json: {\n  prompt: `Generate a professional proposal for ${f['Company Name']}.\n\nPain points: ${pain}\nTimeline: ${f.Timeline}\nBudget: ${f['Budget Range']}\nDecision makers: ${f['Decision Makers']}\nTechnical requirements: ${f['Technical Requirements']}\nNext steps: ${f['Next Steps']}\n\nInclude case studies, pricing, visuals, and a clear CTA.`\n} }];"
+      },
+      "id": "2b5aeb4d-537a-46f7-b7ab-e939f09770da",
+      "name": "Build Gamma Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        2080
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://public-api.gamma.app/v1.0/generations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "={{ $credentials.gammaApiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": {
+          "inputText": "={{ $json.prompt }}",
+          "format": "document",
+          "exportAs": "pdf"
+        },
+        "options": {}
+      },
+      "id": "f09fbc06-0ef1-475d-a538-d64f781f3e04",
+      "name": "Create Gamma Proposal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        32,
+        2080
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a8afa510-1a9a-4770-b50e-241b7df0e846",
+      "name": "Wait 15 Seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        256,
+        2080
+      ],
+      "webhookId": "ac5ffdff-e744-4ac9-b939-b546b679ad31"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://public-api.gamma.app/v1.0/generations/' + $node['Create Gamma Proposal'].json.generationId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "={{ $credentials.gammaApiKey }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b9fd78a4-c454-4e82-906b-004fd56018c0",
+      "name": "Check Gamma Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        480,
+        2080
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "operation": "equal",
+              "value2": "completed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ed1c54ee-7657-49cf-8de0-3163c493f6b6",
+      "name": "Is Proposal Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        688,
+        2080
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appXXXXXXXXXXXXXX"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tblLeads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "87df5fbe-cc3e-4661-82e7-2a00f5b9e121",
+      "name": "Update Airtable - Proposal Sent",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        912,
+        2080
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## PHASE 7: PROPOSAL GENERATION",
+        "height": 480,
+        "width": 1824
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -736,
+        1936
+      ],
+      "typeVersion": 1,
+      "id": "997f928b-7385-4e7c-9d4d-d800514b0fb0",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "stripe-webhook-payment",
+        "options": {}
+      },
+      "id": "faaf0c92-b77f-4c04-90d2-88175213653f",
+      "name": "Stripe Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -2112,
+        2640
+      ],
+      "webhookId": "stripe_webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.type }}",
+              "value2": "invoice.paid"
+            }
+          ]
+        }
+      },
+      "id": "0a78f116-81de-47c6-8676-470847ba01df",
+      "name": "IF Invoice Paid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1856,
+        2624
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.type }}",
+              "value2": "invoice.payment_failed"
+            }
+          ]
+        }
+      },
+      "id": "5e09f373-d951-4fd9-9539-d32c6ba3d74a",
+      "name": "IF Invoice Payment Failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1680,
+        2736
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appXXXXXXXXXXXXXX"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tblLeads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "7713bf2f-0c4a-424a-bb25-66ba32a0d0d3",
+      "name": "Update Airtable → Paid / Delivery",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1648,
+        2512
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appXXXXXXXXXXXXXX"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tblLeads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "095676d0-6192-4d70-99ff-a8ef3c39408d",
+      "name": "Update Airtable → Payment Failed",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1344,
+        2720
+      ]
+    },
+    {
+      "parameters": {
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.sendInBlue",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        2688
+      ],
+      "id": "5444504d-3271-43f3-8728-fb85cbe1ef27",
+      "name": "Send Payment Reminder Email"
+    },
+    {
+      "parameters": {
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.sendInBlue",
+      "typeVersion": 1,
+      "position": [
+        -1376,
+        2512
+      ],
+      "id": "575a4e84-e472-4d65-929a-3bd7055a116a",
+      "name": "Send Payment Done Email"
+    },
+    {
+      "parameters": {
+        "content": "## PHASE 8: PIPELINE TRACKING (strip)",
+        "height": 512,
+        "width": 1536
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2224,
+        2432
+      ],
+      "typeVersion": 1,
+      "id": "6e1e457f-5b18-4266-9676-158fe96bcc4f",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "baseId": "YOUR_BASE_ID",
+        "tableId": "Leads",
+        "additionalFields": {}
+      },
+      "id": "27c6be31-6ae8-47f0-9817-30e0d7a9b295",
+      "name": "Airtable Trigger – Payment Received",
+      "type": "n8n-nodes-base.airtableTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2112,
+        3136
+      ]
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "id": "cec7c593-7c2a-40ef-8c76-5e0b2e3e6bc4",
+      "name": "Get Client Details",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1856,
+        3136
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const f = $json.fields;\nreturn [{\n  json: {\n    email: f.Email,\n    firstName: f.First_Name,\n    company: f.Company,\n    dealId: $json.id,\n    stage: f.Stage\n  }\n}];"
+      },
+      "id": "4e17d8a9-f0cd-4964-91f4-3c947c0072a8",
+      "name": "Prepare Client Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        3136
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.example.com/create-client-user",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"email\": $json.email, \"name\": $json.firstName }",
+        "options": {}
+      },
+      "id": "76030c29-3477-467f-bcd5-482bfc37ca19",
+      "name": "Create Client User (Auth Placeholder)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -1360,
+        3136
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "9de06e27-1c5f-406c-9b31-d39be177d8a5",
+      "name": "Update Airtable – In Delivery",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        3216
+      ]
+    },
+    {
+      "parameters": {
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.sendInBlue",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        3056
+      ],
+      "id": "34057d78-3e71-40e3-95c7-b861b6d3c866",
+      "name": "Send Welcome Email"
+    },
+    {
+      "parameters": {
+        "content": "## PHASE 9 – DELIVERY AUTOMATION",
+        "height": 480,
+        "width": 1520
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2224,
+        2960
+      ],
+      "typeVersion": 1,
+      "id": "2999ed83-3604-4e47-8a7a-6ac1398c107f",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "baseId": "YOUR_BASE_ID",
+        "tableId": "Leads",
+        "additionalFields": {}
+      },
+      "id": "2c7cc613-bc3d-43da-88c0-7294619d67f7",
+      "name": "Airtable Trigger – Closed Won",
+      "type": "n8n-nodes-base.airtableTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2256,
+        3632
+      ]
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "id": "353a21ef-f12f-459c-b797-78e7a76df0f2",
+      "name": "Get Deal Details",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -2000,
+        3632
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const f = $json.fields;\n\nconst prompt = `Write 3 social media posts announcing a new client win for Cervoa (B2B agency).\n\nClient: ${f.Company}\nTone: Professional, positive, no pricing.\n\n1) LinkedIn (longer, professional)\n2) Twitter/X (short, punchy)\n3) Instagram (caption with emojis)\n\nInclude hashtags: #NewClient #B2BGrowth #StartupLife`;\n\nreturn [{ json: { prompt, recordId: $json.id } }];"
+      },
+      "id": "1dfbb5f5-ff6d-4bf3-b35a-3e3099468bb1",
+      "name": "Build Social Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1760,
+        3632
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_OPENAI_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    { \"role\": \"user\", \"content\": $json.prompt }\n  ]\n}",
+        "options": {}
+      },
+      "id": "12e87ae9-f7b1-480b-bd67-3695d3e21adc",
+      "name": "Generate Social Posts (LLM)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -1504,
+        3632
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.choices[0].message.content;\nconst parts = text.split(/\\n\\n+/);\n\nreturn [\n  { json: { platform: 'linkedin', content: parts[0] || text } },\n  { json: { platform: 'twitter', content: parts[1] || text } },\n  { json: { platform: 'instagram', content: parts[2] || text } }\n];"
+      },
+      "id": "3fb52f95-833c-44ff-9f9b-c62596ebde1f",
+      "name": "Split Platform Posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1264,
+        3632
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.example.com/schedule-post",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"platform\": $json.platform, \"content\": $json.content }",
+        "options": {}
+      },
+      "id": "c6645f9e-74fa-424a-8bec-070bdb8f073f",
+      "name": "Schedule Post (Buffer/Later Placeholder)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -1056,
+        3632
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "7596347b-b71e-488b-94c2-9c832b4f6e54",
+      "name": "Update Airtable – Social Posted",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        3632
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## PHASE 10 – SOCIAL MEDIA AUTOMATION",
+        "height": 240,
+        "width": 1696
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2320,
+        3568
+      ],
+      "typeVersion": 1,
+      "id": "80ae00b6-7fe0-4bdc-a3ec-7a2f60056ac2",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "content": "## PHASE 11: FEEDBACK LOOP & OPTIMIZATION",
+        "height": 432,
+        "width": 1680
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2304,
+        3840
+      ],
+      "typeVersion": 1,
+      "id": "decbf6da-1f62-4f1d-90e7-a54bdc9f5a1b",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {}
+          ]
+        }
+      },
+      "id": "388de3d9-d7d0-4ba2-bd49-074a410f39e7",
+      "name": "Cron – Monday 9 AM",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -2272,
+        3968
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst past = new Date(now);\npast.setDate(now.getDate() - 7);\n\nreturn [{ json: { startDate: past.toISOString(), endDate: now.toISOString() } }];"
+      },
+      "id": "ac51f396-6fb1-4eed-81f7-f5e6b96e92ae",
+      "name": "Build Date Range",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        3968
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "id": "e98c6e9a-ae53-4894-b570-38967b028b1f",
+      "name": "Get Leads (7 Days)",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1728,
+        3872
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "id": "76c093a9-bd28-49af-8775-06c2b1db4206",
+      "name": "Get Wins (7 Days)",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1872,
+        3968
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "id": "b19c4f25-4b80-4c7f-a5fc-263b27b9bbbc",
+      "name": "Get Email Events (7 Days)",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1872,
+        4112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const leads = $items('Get Leads (7 Days)');\nconst wins = $items('Get Wins (7 Days)');\nconst emails = $items('Get Email Events (7 Days)');\n\nconst totalLeads = leads.length;\nconst totalWins = wins.length;\n\nconst revenue = wins.reduce((s, w) => s + (w.json.fields.Deal_Value || 0), 0);\nconst avgDeal = totalWins ? revenue / totalWins : 0;\nconst closeRate = totalLeads ? totalWins / totalLeads : 0;\n\nconst sent = emails.filter(e => e.json.fields.Event === 'sent').length;\nconst opened = emails.filter(e => e.json.fields.Event === 'opened').length;\nconst replied = emails.filter(e => e.json.fields.Event === 'replied').length;\n\nconst engagementRate = sent ? opened / sent : 0;\nconst responseRate = sent ? replied / sent : 0;\n\nreturn [{ json: {\n  week: new Date().toISOString().slice(0,10),\n  totalLeads,\n  totalWins,\n  revenue,\n  avgDeal,\n  closeRate,\n  engagementRate,\n  responseRate\n} }];"
+      },
+      "id": "05de2d9c-fbc5-4876-bff6-4a656af6145a",
+      "name": "Calculate Weekly Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1568,
+        3968
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "f945bf41-806e-4743-b0f3-a7b15704fd68",
+      "name": "Log Weekly Report (Airtable)",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1312,
+        3968
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const m = $json;\nlet notes = [];\n\nif (m.closeRate < 0.15) notes.push('Improve qualification or pricing strategy');\nif (m.engagementRate < 0.25) notes.push('Email copy or cadence needs improvement');\nif (m.responseRate < 0.1) notes.push('Add personalization or follow-ups');\n\nreturn [{ json: { summary: notes.join('\\n') || 'Performance healthy' } }];"
+      },
+      "id": "efda4a2d-166d-43be-9917-9668e00a9c61",
+      "name": "Optimization Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1072,
+        3968
+      ]
+    },
+    {
+      "parameters": {
+        "text": "*Weekly Performance Report*\n\n• Leads: {{ $node['Calculate Weekly Metrics'].json.totalLeads }}\n• Wins: {{ $node['Calculate Weekly Metrics'].json.totalWins }}\n• Revenue: ${{ $node['Calculate Weekly Metrics'].json.revenue }}\n• Avg Deal: ${{ $node['Calculate Weekly Metrics'].json.avgDeal }}\n• Close Rate: {{ ($node['Calculate Weekly Metrics'].json.closeRate * 100).toFixed(1) }}%\n\n*Optimization Suggestions:*\n{{ $json.summary }}",
+        "otherOptions": {},
+        "attachments": []
+      },
+      "id": "4519a7cf-9276-4ed7-9638-dda4b1dea01d",
+      "name": "Send Slack Report",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        -816,
+        3872
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendTemplate",
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.sendInBlue",
+      "typeVersion": 1,
+      "position": [
+        -784,
+        4032
+      ],
+      "id": "53609f70-4792-4838-8fb2-aa552d4a2290",
+      "name": "Email Weekly Summary1"
+    },
+    {
+      "parameters": {
+        "path": "9300e19c-16fa-45d9-9b66-7f970bcf4f69",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -640,
+        2080
+      ],
+      "id": "4cc863cf-b822-4d7b-baa4-fdf7333640c2",
+      "name": "Webhook",
+      "webhookId": "9300e19c-16fa-45d9-9b66-7f970bcf4f69"
+    },
+    {
+      "parameters": {
+        "path": "d9cf76ca-d2a3-4d81-8c3a-0e63a8cadb97",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2064,
+        1152
+      ],
+      "id": "8a86862c-4abc-4482-adb4-1b91778954b1",
+      "name": "Brevo Email Campaign Trigger",
+      "webhookId": "d9cf76ca-d2a3-4d81-8c3a-0e63a8cadb97"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "brevo-engagement",
+        "options": {}
+      },
+      "id": "71dc6924-7120-4d45-a5a1-61d0f8b7ee1e",
+      "name": "Engagement Tracking & Re-Scoring",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -896,
+        1056
+      ],
+      "webhookId": "3311b230-372d-46cb-b83a-6ce4b4f5f2fb"
+    }
+  ],
+  "connections": {
+    "Daily Schedule 8AM UTC": {
+      "main": [
+        [
+          {
+            "node": "Merge Schedule + Form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Search Form": {
+      "main": [
+        [
+          {
+            "node": "Merge Schedule + Form",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Schedule + Form": {
+      "main": [
+        [
+          {
+            "node": "Prepare Apollo Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Apollo Payload": {
+      "main": [
+        [
+          {
+            "node": "Apollo Lead Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Lead Search": {
+      "main": [
+        [
+          {
+            "node": "Normalize Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Clay Enrichment API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clay Enrichment API": {
+      "main": [
+        [
+          {
+            "node": "Normalize Enriched Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Enriched Lead": {
+      "main": [
+        [
+          {
+            "node": "Calculate Dynamic Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Dynamic Score": {
+      "main": [
+        [
+          {
+            "node": "Calculate Quality Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Quality Score": {
+      "main": [
+        [
+          {
+            "node": "Lead Validation IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Validation IF": {
+      "main": [
+        [
+          {
+            "node": "Send to Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Archive Low Quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Airtable": {
+      "main": [
+        [
+          {
+            "node": "Route to Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route to Campaign": {
+      "main": [
+        [
+          {
+            "node": "Hot: Immediate Outreach Day 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Warm: Nurture Day 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cold: Long-term Day 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hot: Immediate Outreach Day 1": {
+      "main": [
+        [
+          {
+            "node": "Hot Follow-up Scheduler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Warm: Nurture Day 1": {
+      "main": [
+        [
+          {
+            "node": "Warm Follow-up Scheduler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cold: Long-term Day 1": {
+      "main": [
+        [
+          {
+            "node": "Cold Follow-up Scheduler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Archive Low Quality": {
+      "main": [
+        [
+          {
+            "node": "Manual Review IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Review IF": {
+      "main": [
+        [
+          {
+            "node": "Queue for Manual Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Archive Other Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Bounce": {
+      "main": [
+        [
+          {
+            "node": "Update Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Reply": {
+      "main": [
+        [
+          {
+            "node": "Update Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Click": {
+      "main": [
+        [
+          {
+            "node": "Update Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Open": {
+      "main": [
+        [
+          {
+            "node": "Update Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Event Switch": {
+      "main": [
+        [
+          {
+            "node": "Handle Open",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Click",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Bounce",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Lead": {
+      "main": [
+        [
+          {
+            "node": "Event Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Payload": {
+      "main": [
+        [
+          {
+            "node": "Find Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Warm Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Warm Leads": {
+      "main": [
+        [
+          {
+            "node": "Personalize Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Personalize Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email (Brevo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email (Brevo)": {
+      "main": [
+        [
+          {
+            "node": "Log Email Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Airtable Lookup Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable Lookup Lead": {
+      "main": [
+        [
+          {
+            "node": "Get Calendly Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Calendly Slots": {
+      "main": [
+        [
+          {
+            "node": "Personalize Email with Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Personalize Email with Slots": {
+      "main": [
+        [
+          {
+            "node": "Create a sender",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendly Trigger": {
+      "main": [
+        [
+          {
+            "node": "Airtable Lookup Lead1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Event Details": {
+      "main": [
+        [
+          {
+            "node": "Zoom Create Meeting",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create an event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zoom Create Meeting": {
+      "main": [
+        [
+          {
+            "node": "Get Zoom URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Zoom URL": {
+      "main": [
+        [
+          {
+            "node": "Personalize Confirmation Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Personalize Confirmation Email": {
+      "main": [
+        [
+          {
+            "node": "Airtable Update Status (Step 9)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a transactional email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable Lookup Lead1": {
+      "main": [
+        [
+          {
+            "node": "Extract Event Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Lead in Airtable": {
+      "main": [
+        [
+          {
+            "node": "IF Lead Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Lead Found?": {
+      "main": [
+        [
+          {
+            "node": "Update Existing Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create New Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Existing Lead": {
+      "main": [
+        [
+          {
+            "node": "IF Schedule Meeting?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create New Lead": {
+      "main": [
+        [
+          {
+            "node": "IF Schedule Meeting?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Schedule Meeting?": {
+      "main": [
+        [
+          {
+            "node": "Send Calendly Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Find Lead in Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Lead from Airtable": {
+      "main": [
+        [
+          {
+            "node": "Build Gamma Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Gamma Prompt": {
+      "main": [
+        [
+          {
+            "node": "Create Gamma Proposal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Gamma Proposal": {
+      "main": [
+        [
+          {
+            "node": "Wait 15 Seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 15 Seconds": {
+      "main": [
+        [
+          {
+            "node": "Check Gamma Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Gamma Status": {
+      "main": [
+        [
+          {
+            "node": "Is Proposal Ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Proposal Ready?": {
+      "main": [
+        [
+          {
+            "node": "Update Airtable - Proposal Sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 15 Seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stripe Webhook": {
+      "main": [
+        [
+          {
+            "node": "IF Invoice Paid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Invoice Paid?": {
+      "main": [
+        [
+          {
+            "node": "Update Airtable → Paid / Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF Invoice Payment Failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Invoice Payment Failed?": {
+      "main": [
+        [
+          {
+            "node": "Update Airtable → Payment Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Airtable → Paid / Delivery": {
+      "main": [
+        [
+          {
+            "node": "Send Payment Done Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Airtable → Payment Failed": {
+      "main": [
+        [
+          {
+            "node": "Send Payment Reminder Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable Trigger – Payment Received": {
+      "main": [
+        [
+          {
+            "node": "Get Client Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Client Details": {
+      "main": [
+        [
+          {
+            "node": "Prepare Client Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Client Payload": {
+      "main": [
+        [
+          {
+            "node": "Create Client User (Auth Placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Client User (Auth Placeholder)": {
+      "main": [
+        [
+          {
+            "node": "Send Welcome Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Airtable – In Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable Trigger – Closed Won": {
+      "main": [
+        [
+          {
+            "node": "Get Deal Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Deal Details": {
+      "main": [
+        [
+          {
+            "node": "Build Social Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Social Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate Social Posts (LLM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Social Posts (LLM)": {
+      "main": [
+        [
+          {
+            "node": "Split Platform Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Platform Posts": {
+      "main": [
+        [
+          {
+            "node": "Schedule Post (Buffer/Later Placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Post (Buffer/Later Placeholder)": {
+      "main": [
+        [
+          {
+            "node": "Update Airtable – Social Posted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron – Monday 9 AM": {
+      "main": [
+        [
+          {
+            "node": "Build Date Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Date Range": {
+      "main": [
+        [
+          {
+            "node": "Get Leads (7 Days)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Wins (7 Days)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Email Events (7 Days)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Leads (7 Days)": {
+      "main": [
+        [
+          {
+            "node": "Calculate Weekly Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Wins (7 Days)": {
+      "main": [
+        [
+          {
+            "node": "Calculate Weekly Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Email Events (7 Days)": {
+      "main": [
+        [
+          {
+            "node": "Calculate Weekly Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Weekly Metrics": {
+      "main": [
+        [
+          {
+            "node": "Log Weekly Report (Airtable)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Weekly Report (Airtable)": {
+      "main": [
+        [
+          {
+            "node": "Optimization Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Optimization Logic": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Report",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email Weekly Summary1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Lead from Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brevo Email Campaign Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Warm Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Engagement Tracking & Re-Scoring": {
+      "main": [
+        [
+          {
+            "node": "Normalize Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cb8ddf8953c0938529b33dd9be8736035f267fa7851097cd18dc6b5013dce4aa"
+  }
+}
