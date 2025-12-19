@@ -1,13 +1,15 @@
 import { ProjectStatus } from "../../components/dashboard/ProjectStatus";
 import { GlassCard } from "../../components/ui/GlassCard";
 
+import { PageHeader } from "../../components/dashboard/PageHeader";
+
 export const DashboardHome = () => {
     return (
-        <div className="max-w-6xl mx-auto py-8">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold mb-2">Project Overview</h1>
-                <p className="text-white/60">Welcome back, Deepak. Here's what's happening today.</p>
-            </div>
+        <div className="max-w-6xl mx-auto">
+            <PageHeader
+                subtitle="Project Overview"
+                helperText="Welcome back, Deepak. Here's what's happening today."
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Column */}
